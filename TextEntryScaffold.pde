@@ -21,6 +21,81 @@ PImage finger;
 //Variables for my silly implementation. You can delete this:
 char currentLetter = 'a';
 
+public class Key {
+  char character;
+  float x, y, size;
+  public Key (char c, float posx, float posy, float s){
+    character = c;
+    x = posx;
+    y = posy;
+    size = s;
+  }
+  
+  boolean clicked(){
+    // returns true if mouse click within bounds, false otherwise
+    return(mouseX > x && mouseX < x + size && mouseY > y && mouseY < y + size); 
+  }
+  
+  void draw(){
+    fill(66, 77, 88);
+    rect(x, y, size, size);
+    fill(255);
+    textSize(12);
+    text("" + character, x + size/8, y + size / 1.3);
+    textSize(24);
+  }
+}
+
+public class keyboard {
+   ArrayList<Key> keys = new ArrayList<Key> ();
+   public keyboard(){
+      // draw keyboard
+      char[] qwerty = new char[]{'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm'};
+      float TLx = width/2 - sizeOfInputArea/2;  // x pos of top left corner of the keyboard
+      float TLy = height/2; // y pos of top left corner of the keyboard
+      float button_size = sizeOfInputArea/10;
+      // first row of keyboard
+      for (int i = 0; i < 10; i++){
+        Key k = new Key(qwerty[i], TLx + button_size * i, TLy, button_size);
+        keys.add(k);
+      }
+      // second row of the keyboard
+      for (int i = 10; i < 19; i++){
+        Key k = new Key(qwerty[i], TLx + button_size * (i - 10) + button_size / 2, TLy + button_size, button_size);
+        keys.add(k);
+      }
+      // third (final) row of the keyboard
+      for (int i = 19; i < 26; i++){
+        Key k = new Key(qwerty[i], TLx + button_size * (i - 19) + button_size, TLy + 2*button_size, button_size);
+        keys.add(k);
+      } 
+      // special keys (delete & space)
+      Key space = new Key('_', TLx, TLy + button_size * 2, 10);
+      keys.add(space);
+      Key del = new Key('`', TLx + button_size * 8.5, TLy + button_size * 2, 10);
+      keys.add(del);
+   }
+  
+  char get_inputs(){
+     char c = 0;
+     for (int i = 0; i < keys.size(); i++){
+       if(keys.get(i).clicked()){
+          c = keys.get(i).character;
+          break;
+       }
+     }
+     return c;
+  }
+  
+  void draw(){
+    for (int i = 0; i < keys.size(); i++){
+      keys.get(i).draw(); 
+    }
+  } 
+}  
+
+keyboard K;
+
 //You can modify anything in here. This is just a basic implementation.
 void setup()
 {
@@ -30,11 +105,12 @@ void setup()
   phrases = loadStrings("phrases2.txt"); //load the phrase set into memory
   Collections.shuffle(Arrays.asList(phrases), new Random()); //randomize the order of the phrases with no seed
   //Collections.shuffle(Arrays.asList(phrases), new Random(100)); //randomize the order of the phrases with seed 100; same order every time, useful for testing
- 
+
   orientation(LANDSCAPE); //can also be PORTRAIT - sets orientation on android device
   size(800, 800); //Sets the size of the app. You should modify this to your device's native size. Many phones today are 1080 wide by 1920 tall.
   textFont(createFont("Arial", 24)); //set the font to arial 24. Creating fonts is expensive, so make difference sizes once in setup, not draw
   noStroke(); //my code doesn't use any strokes
+  K = new keyboard (); 
 }
 
 //You can modify anything in here. This is just a basic implementation.
@@ -80,19 +156,23 @@ void draw()
     rect(600, 600, 200, 200); //draw next button
     fill(255);
     text("NEXT > ", 650, 650); //draw next label
-
-    //example design draw code
-    fill(255, 0, 0); //red button
-    rect(width/2-sizeOfInputArea/2, height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
-    fill(0, 255, 0); //green button
-    rect(width/2-sizeOfInputArea/2+sizeOfInputArea/2, height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw right green button
-    textAlign(CENTER);
-    fill(200);
-    text("" + currentLetter, width/2, height/2-sizeOfInputArea/4); //draw current letter
+    
+    K.draw();
   }
  
    drawFinger(); //this is your "cursor"
 }
+
+  
+////example design draw code
+//fill(255, 0, 0); //red button
+//rect(width/2-sizeOfInputArea/2, height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
+//fill(0, 255, 0); //green button
+//rect(width/2-sizeOfInputArea/2+sizeOfInputArea/2, height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw right green button
+//textAlign(CENTER);
+//fill(200);
+//text("" + currentLetter, width/2, height/2-sizeOfInputArea/4); //draw current letter
+//}
 
 //my terrible implementation you can entirely replace
 boolean didMouseClick(float x, float y, float w, float h) //simple function to do hit testing
@@ -100,25 +180,12 @@ boolean didMouseClick(float x, float y, float w, float h) //simple function to d
   return (mouseX > x && mouseX<x+w && mouseY>y && mouseY<y+h); //check to see if it is in button bounds
 }
 
-//my terrible implementation you can entirely replace
+// non as terrible implementation
 void mousePressed()
 {
-  if (didMouseClick(width/2-sizeOfInputArea/2, height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in left button
-  {
-    currentLetter --;
-    if (currentLetter<'_') //wrap around to z
-      currentLetter = 'z';
-  }
-
-  if (didMouseClick(width/2-sizeOfInputArea/2+sizeOfInputArea/2, height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in right button
-  {
-    currentLetter ++;
-    if (currentLetter>'z') //wrap back to space (aka underscore)
-      currentLetter = '_';
-  }
-
-  if (didMouseClick(width/2-sizeOfInputArea/2, height/2-sizeOfInputArea/2, sizeOfInputArea, sizeOfInputArea/2)) //check if click occured in letter area
-  {
+  char c = K.get_inputs();
+  if (c != 0){
+     currentLetter = c; 
     if (currentLetter=='_') //if underscore, consider that a space bar
       currentTyped+=" ";
     else if (currentLetter=='`' & currentTyped.length()>0) //if `, treat that as a delete command
@@ -133,7 +200,6 @@ void mousePressed()
     nextTrial(); //if so, advance to next trial
   }
 }
-
 
 void nextTrial()
 {
