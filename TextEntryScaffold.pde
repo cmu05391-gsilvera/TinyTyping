@@ -21,9 +21,18 @@ PImage finger;
 //Variables for my silly implementation. You can delete this:
 char currentLetter = 'a';
 
+// Variables for keyboard
+float TLx;  // x pos of top left corner of the keyboard
+float TLy; // y pos of top left corner of the keyboard
+      
+float clamp (float x, float lo, float hi){
+   return min(hi, max(x, lo));
+}
+
 public class Key {
   char character;
   float x, y, size;
+  float mag_size = 30;
   public Key (char c, float posx, float posy, float s){
     character = c;
     x = posx;
@@ -43,6 +52,17 @@ public class Key {
     textSize(12);
     text("" + character, x + size/8, y + size / 1.3);
     textSize(24);
+    // also draw magnification on hover
+    if (mouseX > x && mouseX < x + size && mouseY > y && mouseY < y + size){
+      float mag_x = clamp(x - mag_size / 2, TLx, TLx + sizeOfInputArea - mag_size);
+      float mag_y = clamp(y - mag_size * 2, height / 2 - sizeOfInputArea/2, height / 2 + sizeOfInputArea/2);
+      fill(66, 77, 88);
+      rect(mag_x, mag_y, mag_size, mag_size);
+      fill(255);
+      textSize(mag_size);
+      text("" + character, mag_x + mag_size / 8, mag_y + mag_size * 0.75);
+      textSize(24);
+    }
   }
 }
 
@@ -51,8 +71,8 @@ public class keyboard {
    public keyboard(){
       // draw keyboard
       char[] qwerty = new char[]{'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm'};
-      float TLx = width/2 - sizeOfInputArea/2;  // x pos of top left corner of the keyboard
-      float TLy = height/2; // y pos of top left corner of the keyboard
+      TLx = width/2 - sizeOfInputArea/2;  // x pos of top left corner of the keyboard
+      TLy = height/2; // y pos of top left corner of the keyboard
       float button_size = sizeOfInputArea/10;
       // first row of keyboard
       for (int i = 0; i < 10; i++){
@@ -179,6 +199,7 @@ boolean didMouseClick(float x, float y, float w, float h) //simple function to d
 {
   return (mouseX > x && mouseX<x+w && mouseY>y && mouseY<y+h); //check to see if it is in button bounds
 }
+
 
 // non as terrible implementation
 void mousePressed()
