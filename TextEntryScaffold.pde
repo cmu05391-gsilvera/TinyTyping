@@ -51,8 +51,12 @@ public class Key {
   }
   void draw(float x_offset){
     float dx = x + x_offset;
-    fill(66, 77, 88);
+    //border rectangle
+    fill(0, 0, 0);
     rect(dx, y, size, size);
+    // main rectangle
+    fill(66, 77, 88);
+    rect(dx, y, size - 2, size - 2);
     fill(255);
     textSize(12);
     text("" + character, dx + size/8, y + size / 1.3);
