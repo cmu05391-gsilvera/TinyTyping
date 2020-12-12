@@ -25,6 +25,7 @@ char currentLetter = 'a';
 float TLx;  // x pos of top left corner of the keyboard
 float TLy; // y pos of top left corner of the keyboard
 boolean left_keyboard = true;
+boolean mouse_down = false;
       
 float clamp (float x, float lo, float hi){
    return min(hi, max(x, lo));
@@ -57,23 +58,25 @@ public class Key {
     text("" + character, dx + size/8, y + size / 1.3);
     textSize(24);
     // also draw magnification on hover
-    if (!is_special() && mouseX > dx && mouseX < dx + size && mouseY > y && mouseY < y + size){
-      float mag_x = clamp(dx - mag_size / 2, TLx, TLx + sizeOfInputArea - mag_size);
-      float mag_y = clamp(y - mag_size * 2, height / 2 - sizeOfInputArea/2, height / 2 + sizeOfInputArea/2);
-      fill(30, 30, 99);
-      rect(mag_x, mag_y, mag_size, mag_size);
-      fill(255);
-      textSize(mag_size);
-      text("" + character, mag_x + mag_size / 8, mag_y + mag_size * 0.75);
-      textSize(24);
-    }
-    else if (character == ' ' && mouseX > dx && mouseX < dx + size && mouseY > y && mouseY < y + size){
-      fill(255, 255, 0, 50);
-      if(!left_keyboard){
-        rect(width/2 - sizeOfInputArea / 2, height/2 - sizeOfInputArea / 2, sizeOfInputArea / 2, sizeOfInputArea);
+    if(mouse_down){
+      if (!is_special() && mouseX > dx && mouseX < dx + size && mouseY > y && mouseY < y + size){
+        float mag_x = clamp(dx - mag_size / 2, TLx, TLx + sizeOfInputArea - mag_size);
+        float mag_y = clamp(y - mag_size * 2, height / 2 - sizeOfInputArea/2, height / 2 + sizeOfInputArea/2);
+        fill(30, 30, 99);
+        rect(mag_x, mag_y, mag_size, mag_size);
+        fill(255);
+        textSize(mag_size);
+        text("" + character, mag_x + mag_size / 8, mag_y + mag_size * 0.75);
+        textSize(24);
       }
-      else{
-        rect(width/2, height/2 - sizeOfInputArea / 2, sizeOfInputArea / 2, sizeOfInputArea);
+      else if (character == ' ' && mouseX > dx && mouseX < dx + size && mouseY > y && mouseY < y + size){
+        fill(255, 255, 0, 50);
+        if(!left_keyboard){
+          rect(width/2 - sizeOfInputArea / 2, height/2 - sizeOfInputArea / 2, sizeOfInputArea / 2, sizeOfInputArea);
+        }
+        else{
+          rect(width/2, height/2 - sizeOfInputArea / 2, sizeOfInputArea / 2, sizeOfInputArea);
+        }
       }
     }
   }
@@ -267,6 +270,16 @@ boolean didMouseClick(float x, float y, float w, float h) //simple function to d
 // non as terrible implementation
 void mousePressed()
 {
+  mouse_down = true;
+  //You are allowed to have a next button outside the 1" area
+  if (didMouseClick(600, 600, 200, 200)) //check if click is in next button
+  {
+    nextTrial(); //if so, advance to next trial
+  }
+}
+
+void mouseReleased(){
+  mouse_down = false; 
   char c = K.get_inputs();
   if (c != 0){
      currentLetter = c; 
@@ -276,12 +289,6 @@ void mousePressed()
       currentTyped = currentTyped.substring(0, currentTyped.length()-1);
     else if (currentLetter!='`') //if not any of the above cases, add the current letter to the typed string
       currentTyped+=currentLetter;
-  }
-
-  //You are allowed to have a next button outside the 1" area
-  if (didMouseClick(600, 600, 200, 200)) //check if click is in next button
-  {
-    nextTrial(); //if so, advance to next trial
   }
 }
 
