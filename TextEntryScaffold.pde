@@ -21,9 +21,20 @@ PImage finger;
 //Variables for my silly implementation. You can delete this:
 char currentLetter = 'a';
 
+// Variables for keyboard
+float TLx;  // x pos of top left corner of the keyboard
+float TLy; // y pos of top left corner of the keyboard
+boolean left_keyboard = true;
+boolean mouse_down = false;
+      
+float clamp (float x, float lo, float hi){
+   return min(hi, max(x, lo));
+}
+
 public class Key {
   char character;
   float x, y, size;
+  float mag_size = 40;
   public Key (char c, float posx, float posy, float s){
     character = c;
     x = posx;
@@ -31,29 +42,62 @@ public class Key {
     size = s;
   }
   
-  boolean clicked(){
+  boolean clicked(float x_offset){
     // returns true if mouse click within bounds, false otherwise
-    return(mouseX > x && mouseX < x + size && mouseY > y && mouseY < y + size); 
+    return(mouseX > x + x_offset && mouseX < x + size+ x_offset && mouseY > y && mouseY < y + size); 
   }
-  
-  void draw(){
+  boolean is_special(){
+    return (character == '_' || character == ' ' || character == '`'); 
+  }
+  void draw(float x_offset){
+    float dx = x + x_offset;
+    //border rectangle
+    fill(0, 0, 0);
+    rect(dx, y, size, size);
+    // main rectangle
     fill(66, 77, 88);
-    rect(x, y, size, size);
+    rect(dx, y, size - 2, size - 2);
     fill(255);
     textSize(12);
-    text("" + character, x + size/8, y + size / 1.3);
+    text("" + character, dx + size/8, y + size / 1.3);
     textSize(24);
+    // also draw magnification on hover
+    if(mouse_down){
+      if (!is_special() && mouseX > dx && mouseX < dx + size && mouseY > y && mouseY < y + size){
+        float mag_x = clamp(dx - mag_size / 2, TLx, TLx + sizeOfInputArea - mag_size);
+        float mag_y = clamp(y - mag_size * 2, height / 2 - sizeOfInputArea/2, height / 2 + sizeOfInputArea/2);
+        fill(30, 30, 99);
+        rect(mag_x, mag_y, mag_size, mag_size);
+        fill(255);
+        textSize(mag_size);
+        text("" + character, mag_x + mag_size / 8, mag_y + mag_size * 0.75);
+        textSize(24);
+      }
+      else if (character == ' ' && mouseX > dx && mouseX < dx + size && mouseY > y && mouseY < y + size){
+        fill(255, 255, 0, 50);
+        if(!left_keyboard){
+          rect(width/2 - sizeOfInputArea / 2, height/2 - sizeOfInputArea / 2, sizeOfInputArea / 2, sizeOfInputArea);
+        }
+        else{
+          rect(width/2, height/2 - sizeOfInputArea / 2, sizeOfInputArea / 2, sizeOfInputArea);
+        }
+      }
+    }
   }
 }
 
 public class keyboard {
    ArrayList<Key> keys = new ArrayList<Key> ();
+   // draw half the keys for Left side
+   int[] keysL = new int[]{0, 1, 2, 3, 4, 10, 11, 12, 13, 14, 19, 20, 21, 22, 23};
+   // draw other half for right side
+   int[] keysR = new int[]{5, 6, 7, 8, 9, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25};
    public keyboard(){
       // draw keyboard
       char[] qwerty = new char[]{'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm'};
-      float TLx = width/2 - sizeOfInputArea/2;  // x pos of top left corner of the keyboard
-      float TLy = height/2; // y pos of top left corner of the keyboard
-      float button_size = sizeOfInputArea/10;
+      TLx = width/2 - sizeOfInputArea/2;  // x pos of top left corner of the keyboard
+      TLy = height/2 - 15; // y pos of top left corner of the keyboard
+      float button_size = sizeOfInputArea/5;
       // first row of keyboard
       for (int i = 0; i < 10; i++){
         Key k = new Key(qwerty[i], TLx + button_size * i, TLy, button_size);
@@ -61,35 +105,81 @@ public class keyboard {
       }
       // second row of the keyboard
       for (int i = 10; i < 19; i++){
-        Key k = new Key(qwerty[i], TLx + button_size * (i - 10) + button_size / 2, TLy + button_size, button_size);
+        Key k = new Key(qwerty[i], TLx + button_size * (i - 10), TLy + button_size, button_size);
         keys.add(k);
       }
       // third (final) row of the keyboard
       for (int i = 19; i < 26; i++){
-        Key k = new Key(qwerty[i], TLx + button_size * (i - 19) + button_size, TLy + 2*button_size, button_size);
+        Key k = new Key(qwerty[i], TLx + button_size * (i - 19), TLy + 2*button_size, button_size);
         keys.add(k);
       } 
-      // special keys (delete & space)
-      Key space = new Key('_', TLx, TLy + button_size * 2, 10);
+      // special keys (delete & space & slide)
+      Key slide = new Key(' ', TLx + 42, TLy - 43, 38);
+      keys.add(slide);
+      Key space = new Key('_', TLx, TLy - 45, 40);
       keys.add(space);
-      Key del = new Key('`', TLx + button_size * 8.5, TLy + button_size * 2, 10);
+      Key del = new Key('`', TLx + 82, TLy - 45, 40);
       keys.add(del);
+      
    }
   
   char get_inputs(){
-     char c = 0;
-     for (int i = 0; i < keys.size(); i++){
-       if(keys.get(i).clicked()){
-          c = keys.get(i).character;
+    char c = 0;
+    if(keys.get(keys.size() - 1).clicked(0)){
+      c = keys.get(keys.size() - 1).character;
+    }
+    else if(keys.get(keys.size() - 2).clicked(0)){
+      c = keys.get(keys.size() - 2).character;
+    }
+    else if(keys.get(keys.size() - 3).clicked(0)){
+      left_keyboard = !left_keyboard; // toggle keyboard
+    }
+    else if (left_keyboard){
+      for (int i = 0; i < 15; i++){
+        if(keys.get(keysL[i]).clicked(0)){
+          c = keys.get(keysL[i]).character;
           break;
-       }
-     }
-     return c;
+        }
+      }
+    }
+    else {
+      for (int i = 0; i < 15; i++){
+        float x_offset = -sizeOfInputArea;
+        if (i < 5)
+          x_offset = -sizeOfInputArea;
+        else if (i < 10)
+          x_offset = -sizeOfInputArea + 25;
+        else 
+          x_offset = -sizeOfInputArea + 73.5;
+        if(keys.get(keysR[i]).clicked(x_offset)){
+          c = keys.get(keysR[i]).character;
+          break;
+        }
+      }
+    }
+    return c;
   }
   
   void draw(){
-    for (int i = 0; i < keys.size(); i++){
-      keys.get(i).draw(); 
+    keys.get(keys.size() - 1).draw(0); // space
+    keys.get(keys.size() - 2).draw(0); // delete
+    keys.get(keys.size() - 3).draw(0); // delete
+    if (left_keyboard){
+      for (int i = 0; i < 15; i++){
+        keys.get(keysL[i]).draw(0);
+      }
+    }
+    else {
+      for (int i = 0; i < 15; i++){
+        float x_offset = -sizeOfInputArea;
+        if (i < 5)
+          x_offset = -sizeOfInputArea;
+        else if (i < 10)
+          x_offset = -sizeOfInputArea + 25;
+        else 
+          x_offset = -sizeOfInputArea + 73.5;
+        keys.get(keysR[i]).draw(x_offset);
+      }
     }
   } 
 }  
@@ -180,9 +270,20 @@ boolean didMouseClick(float x, float y, float w, float h) //simple function to d
   return (mouseX > x && mouseX<x+w && mouseY>y && mouseY<y+h); //check to see if it is in button bounds
 }
 
+
 // non as terrible implementation
 void mousePressed()
 {
+  mouse_down = true;
+  //You are allowed to have a next button outside the 1" area
+  if (didMouseClick(600, 600, 200, 200)) //check if click is in next button
+  {
+    nextTrial(); //if so, advance to next trial
+  }
+}
+
+void mouseReleased(){
+  mouse_down = false; 
   char c = K.get_inputs();
   if (c != 0){
      currentLetter = c; 
@@ -192,12 +293,6 @@ void mousePressed()
       currentTyped = currentTyped.substring(0, currentTyped.length()-1);
     else if (currentLetter!='`') //if not any of the above cases, add the current letter to the typed string
       currentTyped+=currentLetter;
-  }
-
-  //You are allowed to have a next button outside the 1" area
-  if (didMouseClick(600, 600, 200, 200)) //check if click is in next button
-  {
-    nextTrial(); //if so, advance to next trial
   }
 }
 
@@ -290,7 +385,7 @@ void drawFinger()
   ellipse(0,0,5,5);
 
   popMatrix();
-  }
+}
   
 
 //=========SHOULD NOT NEED TO TOUCH THIS METHOD AT ALL!==============
